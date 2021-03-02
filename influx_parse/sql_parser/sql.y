@@ -45,7 +45,7 @@
 %%
 
 program:
-stmt TERMINATOR {ProcessTree($1);}
+sel_clause TERMINATOR {ProcessTree($1);}
 ;    
 
 stmt:
