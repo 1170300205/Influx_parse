@@ -26,30 +26,44 @@
 %token OPERATOR LBORDER RBORDER ORDER GROUP
 %token TERMINATOR MEASURE
 %token STRING INTEGER FLOAT REGEX 
-%token INTO LIMIT OFFSET SLMIT SOFFSET TZ AS ASC DESC
-%token LEFTPARENTHESIS RIGHTPARENTHESIS DURATION BOOL FILLS FILL
-%token FIELD_KEY FIELD_KEYS 
-
+%token INTO LIMIT OFFSET SLMIT SOFFSET TZ AS ASC DESC OP DELETE ON
+%token LEFTPARENTHESIS RIGHTPARENTHESIS DURATION BOOL FILLS FILL MEASURE
+%token FIELD_KEY DURA REPLICATION SHARD CNAME DEFAULT ALTER
+%token DB_NAME POLICY_NAME MEASUREMENT_NAME UNARY_EXPR DURATION_LIT EXPR
+%token DIMENSION DIMENSIONS FIELD FIELDS FILL_OPTION FILL_CLAUSE
+%token MEASUREMENT MEASUREMENTS VAR_REF BACK_REF SORT_FIELD SORT_FIELDS GROUP_BY_CLAUSE ORDER_BY_CLAUSE 
+%token TIMEZONE_CLAUSE INTO_CLAUSE WHERE_CLAUSE ALIAS FROM_CLAUSE SEL_CLAUSE
+%token LIMIT_CLAUSE OFFSET_CLAUSE SLMIT_CLAUSE SOFFSET_CLAUSE DELETE_STMT ON_CLAUSE RETENTION_POLICY_OPTION ALTER_STMT
+ 
 %type<pNode> STMT
 %type<pNode> OP ST NSPLIT ST_LIST
 %type<pNode> FM NAME FM_LIST NAME_LIST
 %type<pNode> WH WHSPLIT WH_LIST WHNAME_LIST WHNAME
 %type<pNode> OPERATOR LBORDER RBORDER ORDER GROUP
 %type<pNode> TERMINATOR MEASURE
-%type<pNode> STRING INTEGER FLOAT
-%type<pNode> INTO LIMIT OFFSET SLMIT SOFFSET TZ AS ASC DESC
-%type<pNode> LEFTPARENTHESIS RIGHTPARENTHESIS DURATION BOOL FILLS FILL
+%type<pNode> STRING INTEGER FLOAT REGEX
+%type<pNode> INTO LIMIT OFFSET SLMIT SOFFSET TZ AS ASC DESC OP DELETE ON
+%type<pNode> LEFTPARENTHESIS RIGHTPARENTHESIS DURATION BOOL FILLS FILL MEASURE
+%type<pNode> FIELD_KEY DURA REPLICATION SHARD CNAME DEFAULT ALTER
+%type<pNode> DB_NAME POLICY_NAME MEASUREMENT_NAME UNARY_EXPR DURATION_LIT EXPR
+%type<pNode> DIMENSION DIMENSIONS FIELD FIELDS FILL_OPTION FILL_CLAUSE
+%type<pNode> MEASUREMENT MEASUREMENTS VAR_REF BACK_REF SORT_FIELD SORT_FIELDS GROUP_BY_CLAUSE ORDER_BY_CLAUSE 
+%type<pNode> TIMEZONE_CLAUSE INTO_CLAUSE WHERE_CLAUSE ALIAS FROM_CLAUSE SEL_CLAUSE
+%type<pNode> LIMIT_CLAUSE OFFSET_CLAUSE SLMIT_CLAUSE SOFFSET_CLAUSE DELETE_STMT ON_CLAUSE RETENTION_POLICY_OPTION ALTER_STMT
 
-%type<pNode> program stmt st_list fm_list wh_list name_list whname_list whname limit_clause offset_clause slimit_clause soffset_clause whvalue timezone_clause field_key
-
+%type<pNode> program stmt st_list fm_list wh_list name_list whname_list whname limit_clause offset_clause slimit_clause soffset_clause whvalue field_key on_clause alter_stmt
+%type<pNode> measurement measurements var_ref back_ref sort_field sort_fields group_by_clause order_by_clause timezone_clause into_clause where_clause alias from_clause sel_clause
+%type<pNode> dimension dimensions field fields fill_option fill_clause db_name policy_name measurement_name unary_expr duration_lit expr delete_stmt on_clause retention_policy_option
 %%
 
 program:
 sel_clause TERMINATOR {ProcessTree($1);}
+|delete_stmt TERMINATOR {ProcessTree($1);}
+|alter_stmt TERMINATOR {ProcessTree($1);}
 ;    
 
 stmt:
-st_list fm_list                                {$$ = NewFatherAddSon(STMT, $1, $2);}
+st_list fm_list                     {$$ = NewFatherAddSon(STMT, $1, $2);}
 |st_list fm_list wh_list           {$$ = NewFatherAddSon(STMT, $1, $2, $3);}
 ;
 
@@ -80,7 +94,11 @@ NAME OPERATOR whvalue          {$$ = NewFatherAddSon(WHNAME, $1, $2, $3);}
 ;
 
 
-
+delete_stmt:
+DELETE from_clause					{$$ = NewFatherAddSon(DELETE_STMT, $1, $2);}
+|DELETE where_clause 				{$$ = NewFatherAddSon(DELETE_STMT, $1, $2);}
+|DELETE from_clause where_clause	{$$ = NewFatherAddSon(DELETE_STMT, $1, $2, $3);}
+;
 
 sel_clause:
 ST fields from_clause						{$$ = NewFatherAddSon(SEL_CLAUSE, $1, $2);}
@@ -92,7 +110,11 @@ ST fields from_clause						{$$ = NewFatherAddSon(SEL_CLAUSE, $1, $2);}
 |ST fields from_clause limit_clause			{$$ = NewFatherAddSon(SEL_CLAUSE, $1, $2, $3);}
 |ST fields from_clause slimit_clause		{$$ = NewFatherAddSon(SEL_CLAUSE, $1, $2, $3);}
 |ST fields from_clause timezone_clause		{$$ = NewFatherAddSon(SEL_CLAUSE, $1, $2, $3);}
-;		
+;	
+
+
+alter_stmt:
+ALTER policy_name on_clause retention_policy_option 	{$$ = NewFatherAddSon(ALTER_STMT, $1, $2, $3, $4);}
 
 from_clause:
 FM measurements					{$$ = NewFatherAddSon(FROM_CLAUSE, $1, $2);}
@@ -169,6 +191,15 @@ policy_name '.' measurement_name {$$ = NewFatherAddSon(MEASUREMENT, $1, $3);}
 db_name '.' policy_name '.' measurement_name  {NewFatherAddSon(MEASUREMENT, $1, $3, $5);}
 ;
 
+
+retention_policy_option:
+DURA duration_lit				{$$ = NewFatherAddSon(RETENTION_POLICY_OPTION, $1, $2);}
+|REPLICATION INTEGER			{$$ = NewFatherAddSon(RETENTION_POLICY_OPTION, $1, $2);}
+|SHARD duration_lit				{$$ = NewFatherAddSon(RETENTION_POLICY_OPTION, $1, $2);}
+|DEFAULT						{$$ = NewFatherAddSon(RETENTION_POLICY_OPTION, $1);}
+
+
+
 fill_clause:
 FILL LEFTPARENTHESIS fill_option RIGHTPARENTHESIS   {$$ = NewFatherAddSon(FILL_CLAUSE, $1, $2, $3, $4);}
 ;
@@ -216,6 +247,9 @@ INTEGER							{$$ = NewFatherAddSon(UNARY_EXPR, $1);}
 |STRING							{$$ = NewFatherAddSon(UNARY_EXPR, $1);}
 |LEFTPARENTHESIS expr RIGHTPARENTHESIS  {$$ = NewFatherAddSon(UNARY_EXPR, $1, $2, $3);}
 ;
+
+on_clause:
+ON db_name						{$$ = NewFatherAddSon(ON_CLAUSE, $1, $2);}
 
 field_key:
 NAME							{$$ = $1;}

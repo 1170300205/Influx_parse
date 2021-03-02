@@ -20,8 +20,10 @@ as              (As|AS|as)
 st              (select|SELECT|Select)
 fm              (from|FROM|From)
 wh              (where|WHERE|Where)
+delete          (delete|Delete|DELETE)
 asc             (ASC)
 desc            (DESC)
+on				(on|ON|On)
 into            (into|INTO|Into)
 limit           (limit|LIMIT|Limit)
 offset          (offset|OFFSET|Offset)
@@ -29,6 +31,12 @@ slmit           (slmit|SLMIT|Slmit)
 soffset         (soffset|SOFFSET|Soffset)
 group           ((group by)|(GROUP BY))
 order           ((order by)|(ORDER BY))
+dura			(DURATION)
+replication     (REPLICATION)
+shard			(SHARD DURATION)
+cname			(NAME)
+default			(DEFAULT)
+alter			(ALTER RETENTION POLICY)
 measure         (\.:MEASUREMENT)
 terminator      [;]
 nsplit          [,]
@@ -50,6 +58,13 @@ tz              (tz)
                 yylval.pNode->type=ST;
                 snprintf(yylval.pNode->text,sizeof(yylval.pNode->text),"select");
                 return ST;
+        }
+
+{delete}  	{
+                yylval.pNode = MallocNewNode();
+                yylval.pNode->type=DELETE;
+                snprintf(yylval.pNode->text,sizeof(yylval.pNode->text),"delete");
+                return DELETE;
         }
 		
 {asc}	{
@@ -78,6 +93,13 @@ tz              (tz)
                 yylval.pNode->type=WH;
                 snprintf(yylval.pNode->text,sizeof(yylval.pNode->text),"where");
                 return WH;
+        }
+
+{on}    {
+                yylval.pNode = MallocNewNode();
+                yylval.pNode->type=ON;
+                snprintf(yylval.pNode->text,sizeof(yylval.pNode->text),"on");
+                return ON;
         }
 		
 {into}	{
@@ -120,6 +142,48 @@ tz              (tz)
                 yylval.pNode->type=ORDER;
                 snprintf(yylval.pNode->text,sizeof(yylval.pNode->text),"order by");
                 return ORDER;
+		}
+
+{alter} {
+				yylval.pNode = MallocNewNode();
+                yylval.pNode->type=ALTER;
+                snprintf(yylval.pNode->text,sizeof(yylval.pNode->text),"ALTER RETENTION POLICY");
+                return ALTER;
+		}		
+
+{dura} {
+				yylval.pNode = MallocNewNode();
+                yylval.pNode->type=DURA;
+                snprintf(yylval.pNode->text,sizeof(yylval.pNode->text),"DURATION");
+                return DURA;
+		}
+		
+{replication} {
+				yylval.pNode = MallocNewNode();
+                yylval.pNode->type=REPLICATION;
+                snprintf(yylval.pNode->text,sizeof(yylval.pNode->text),"REPLICATION");
+                return REPLICATION;
+			}
+			
+{shard} {
+				yylval.pNode = MallocNewNode();
+                yylval.pNode->type=SHARD;
+                snprintf(yylval.pNode->text,sizeof(yylval.pNode->text),"SHARD DURATION");
+                return SHARD;
+		}
+		
+{cname} {
+				yylval.pNode = MallocNewNode();
+                yylval.pNode->type=CNAME;
+                snprintf(yylval.pNode->text,sizeof(yylval.pNode->text),"NMAE");
+                return CNAME;
+		}
+		
+{default} {
+				yylval.pNode = MallocNewNode();
+                yylval.pNode->type=DEFAULT;
+                snprintf(yylval.pNode->text,sizeof(yylval.pNode->text),"DEFAULT");
+                return DEFAULT;
 		}
 		
 {tz}	{
